@@ -1,0 +1,64 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import datetime as dt
+
+results = pd.read_csv("C://Users/gav/results.csv", index_col=['country'])
+countries = pd.read_csv("C://Users/gav/countries.csv", index_col=['country'])
+
+results_ctry = results.merge(countries, on='country', how='left')
+results_ctry.fillna(0)
+results_ctry.sort_values(by='date', ascending=False)
+
+
+#Home or away won the game
+conditions = [
+    (results_ctry['home_score'] > results_ctry['away_score']),
+    (results_ctry['home_score'] < results_ctry['away_score']),
+    (results_ctry['home_score'] == results_ctry['away_score']),
+    ]
+
+values = ['Home Win', 'Away Win', 'Draw']
+
+results_ctry['Winner'] = np.select(conditions, values)
+results_ctry['Tot Goals'] = np.add(results_ctry['home_score'], results_ctry['away_score'])
+results_ctry['year'] = pd.DatetimeIndex(results_ctry['date']).year
+
+#which team won the game
+conditions2 = [
+    (results_ctry['home_score'] > results_ctry['away_score']),
+    (results_ctry['home_score'] < results_ctry['away_score']),
+    (results_ctry['home_score'] == results_ctry['away_score']),
+    ]
+
+values2 = [results_ctry['home_team'], results_ctry['away_team'], 'Draw']
+
+results_ctry['Win Team'] = np.select(conditions2, values2)
+
+WorldCupList = ["FIFA World Cup", "FIFA World Cup qualification"]
+#which tournament has the most goals
+tournament_total = results_ctry.groupby("tournament")["Tot Goals"].sum().sort_values(ascending=False)
+print(tournament_total.head())
+#which tournament has the most games
+games_total = results_ctry.groupby("tournament")["neutral"].count().sort_values(ascending=False)
+print(games_total.head())
+#which year has the most games
+games_year = results_ctry.groupby("year")["neutral"].count().sort_values(ascending=False)
+print(games_year.head())
+
+#CHART01 Histogram on "winners"
+results_ctry["Winner"].hist()
+plt.show()
+
+#CHART02 Line chart on goals by year
+results_ctry.plot(x="year", y="Tot Goals", kind="line")
+plt.show()
+
+#CHART03 Which team have won the most games
+top_team = results_ctry.groupby("Win Team")["Winner"].count().sort_values(ascending=False).head(10)
+top_team.plot(x="Win Team", y="Winner", kind="bar", title="Wins by Country", rot=45)
+plt.show()
+
+print(top_team)
+
+print(results_ctry.head())
